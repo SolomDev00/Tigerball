@@ -9,12 +9,14 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { ArrowLeft, Users } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ArrowLeft, Users, Download } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CourtPosition, TeamType } from "@/constants/index.types";
+import { useEffect, Suspense } from "react";
 
-export default function NewMatchSetup() {
+function MatchSetupContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     availablePlayers,
     homeTeamCourt,
@@ -22,7 +24,36 @@ export default function NewMatchSetup() {
     assignPlayerToCourt,
     removePlayerFromCourt,
     changeSet,
+    teams,
   } = useMatchStore();
+
+  // Load team template function
+  const loadTeamTemplate = (teamType: TeamType, teamId: string) => {
+    if (!teamId) return;
+    const teamData = teams.find((t) => t.id === teamId);
+    if (!teamData) return;
+
+    // Clear current court for this team
+    [1, 2, 3, 4, 5, 6].forEach((pos) =>
+      removePlayerFromCourt(teamType, pos as CourtPosition),
+    );
+
+    // Assign new players
+    teamData.players.forEach((playerId, index) => {
+      const position = (index + 1) as CourtPosition;
+      assignPlayerToCourt(teamType, position, playerId);
+    });
+  };
+
+  // Check URL params on mount
+  useEffect(() => {
+    const homeParam = searchParams.get("home");
+    const awayParam = searchParams.get("away");
+
+    if (homeParam) loadTeamTemplate("Home", homeParam);
+    if (awayParam) loadTeamTemplate("Away", awayParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleStartMatch = () => {
     // Basic validation: Could enforce 6 players per team, but let's allow starting anyway for testing
@@ -36,13 +67,33 @@ export default function NewMatchSetup() {
     return (
       <Card className="flex-1">
         <CardHeader className="bg-muted/50 border-b">
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            تكوين {title}
-          </CardTitle>
-          <CardDescription>
-            اختر اللاعبين لكل مركز في التشكيلة الأساسية
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                تكوين {title}
+              </CardTitle>
+              <CardDescription>
+                اختر اللاعبين لكل مركز في التشكيلة الأساسية
+              </CardDescription>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Download className="w-4 h-4 text-muted-foreground" />
+              <select
+                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                onChange={(e) => loadTeamTemplate(team, e.target.value)}
+                defaultValue={searchParams.get(team.toLowerCase()) || ""}
+              >
+                <option value="">استيراد من الفرق...</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           {[1, 2, 3, 4, 5, 6].map((pos) => {
@@ -110,5 +161,19 @@ export default function NewMatchSetup() {
         {renderTeamSetup("Away", "الفريق الضيف (Away)")}
       </div>
     </div>
+  );
+}
+
+export default function NewMatchSetup() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center p-12 animate-pulse text-lg font-bold text-primary">
+          جاري تحميل البيانات...
+        </div>
+      }
+    >
+      <MatchSetupContent />
+    </Suspense>
   );
 }

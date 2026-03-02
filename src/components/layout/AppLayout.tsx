@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Users, Volleyball, Trophy, LayoutDashboard, Menu } from "lucide-react";
+import {
+  Users,
+  Volleyball,
+  Trophy,
+  LayoutDashboard,
+  Menu,
+  Shuffle,
+  ShieldHalf,
+} from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -11,8 +19,10 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 const navItems = [
   { href: "/", label: "الرئيسية", icon: LayoutDashboard },
   { href: "/players", label: "اللاعبين", icon: Users },
+  { href: "/teams", label: "الفرق", icon: ShieldHalf },
+  { href: "/matches/draw", label: "قرعة المباريات", icon: Shuffle },
   { href: "/matches/new", label: "مباراة جديدة", icon: Volleyball },
-  { href: "/leaderboard", label: "قائمة المتصدرين", icon: Trophy },
+  { href: "/leaderboard", label: "المتصدرين", icon: Trophy },
 ];
 
 interface AppLayoutProps {
@@ -24,11 +34,27 @@ interface NavContentProps {
   onItemClick: () => void;
 }
 
-const NavContent = ({ pathname, onItemClick }: NavContentProps) => (
-  <div className="flex flex-col gap-2 p-4">
+const NavContent = ({
+  pathname,
+  onItemClick,
+  isCollapsed,
+}: NavContentProps & { isCollapsed?: boolean }) => (
+  <div className="flex flex-col gap-2 p-4 h-full overflow-hidden whitespace-nowrap">
     <div className="flex items-center justify-center py-6 mb-4">
-      <Volleyball className="w-10 h-10 text-primary" />
-      <span className="text-2xl font-bold mr-3 text-primary">Tigerball</span>
+      <Volleyball
+        className={cn(
+          "text-primary shrink-0 transition-all duration-500",
+          isCollapsed ? "w-8 h-8" : "w-10 h-10 group-hover:rotate-180",
+        )}
+      />
+      <span
+        className={cn(
+          "text-2xl font-bold mr-3 text-primary transition-opacity duration-300",
+          isCollapsed ? "opacity-0 hidden" : "opacity-100",
+        )}
+      >
+        Tigerball
+      </span>
     </div>
     {navItems.map((item) => {
       const Icon = item.icon;
@@ -40,17 +66,25 @@ const NavContent = ({ pathname, onItemClick }: NavContentProps) => (
           key={item.href}
           variant={isActive ? "default" : "ghost"}
           className={cn(
-            "w-full justify-start text-lg h-12",
+            "justify-start text-lg h-12 w-full",
             isActive
               ? "bg-primary text-primary-foreground"
               : "hover:bg-primary/10",
+            isCollapsed ? "px-0 justify-center" : "px-3",
           )}
           asChild
           onClick={onItemClick}
         >
-          <Link href={item.href}>
-            <Icon className="w-5 h-5 ml-3" />
-            {item.label}
+          <Link href={item.href} title={item.label}>
+            <Icon className="w-6 h-6 shrink-0" />
+            <span
+              className={cn(
+                "mr-3 transition-opacity duration-300",
+                isCollapsed ? "opacity-0 hidden" : "opacity-100",
+              )}
+            >
+              {item.label}
+            </span>
           </Link>
         </Button>
       );
@@ -61,17 +95,29 @@ const NavContent = ({ pathname, onItemClick }: NavContentProps) => (
 export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(true);
 
   return (
-    <div className="min-h-screen bg-muted/30 flex">
+    <div className="min-h-screen bg-muted/30 flex w-full overflow-x-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-72 flex-col bg-card border-l min-h-screen shadow-sm">
-        <NavContent pathname={pathname} onItemClick={() => setIsOpen(false)} />
+      <aside
+        className={cn(
+          "hidden lg:flex flex-col bg-card border-l min-h-screen shadow-sm transition-all duration-300 z-20 sticky top-0 group",
+          isDesktopCollapsed ? "w-20 hover:w-72" : "w-72",
+        )}
+        onMouseEnter={() => setIsDesktopCollapsed(false)}
+        onMouseLeave={() => setIsDesktopCollapsed(true)}
+      >
+        <NavContent
+          pathname={pathname}
+          onItemClick={() => setIsOpen(false)}
+          isCollapsed={isDesktopCollapsed}
+        />
       </aside>
 
       {/* Mobile Header & Content */}
-      <div className="flex-1 flex flex-col min-h-screen relative">
-        <header className="lg:hidden h-16 bg-card border-b flex items-center px-4 justify-between sticky top-0 z-10">
+      <div className="flex-1 flex flex-col min-h-screen relative w-full overflow-hidden">
+        <header className="lg:hidden h-16 bg-card border-b flex items-center px-4 justify-between sticky top-0 z-30 w-full shadow-sm">
           <div className="flex items-center">
             <Volleyball className="w-6 h-6 text-primary" />
             <span className="text-xl font-bold mr-2 text-primary">
@@ -88,12 +134,15 @@ export function AppLayout({ children }: AppLayoutProps) {
               <NavContent
                 pathname={pathname}
                 onItemClick={() => setIsOpen(false)}
+                isCollapsed={false}
               />
             </SheetContent>
           </Sheet>
         </header>
 
-        <main className="flex-1 p-4 lg:p-8 overflow-x-hidden">{children}</main>
+        <main className="flex-1 p-4 lg:p-8 w-full max-w-7xl mx-auto">
+          {children}
+        </main>
       </div>
     </div>
   );

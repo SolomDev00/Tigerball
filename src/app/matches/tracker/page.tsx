@@ -66,12 +66,34 @@ export default function MatchTracker() {
     if (!pointInProgress || touchCount === 0) return "بانتظار الإرسال...";
     if (touchCount === 1) return "استقبال (Defence)";
     if (touchCount === 2) return "إعداد (Setting)";
-    if (touchCount >= 3) return "ضرب هجومي (Striking)";
+    if (touchCount === 3) return "ضرب هجومي (Striking)";
+    if (touchCount >= 4) return "خطأ لمسة رابعة (Error)";
     return "";
+  };
+
+  const getTouchColor = (
+    isActive: boolean,
+    isError: boolean,
+    teamTouches: number,
+  ) => {
+    if (isError)
+      return "ring-4 ring-red-500 border-red-500 shadow-lg scale-105 bg-red-50 dark:bg-red-950";
+    if (!isActive) return "hover:bg-primary/5";
+
+    // Defence = Blue, Setting = Green, Striking = Orange
+    if (teamTouches === 1)
+      return "ring-4 ring-blue-500 border-blue-500 shadow-lg scale-105 bg-blue-50 dark:bg-blue-950";
+    if (teamTouches === 2)
+      return "ring-4 ring-green-500 border-green-500 shadow-lg scale-105 bg-green-50 dark:bg-green-950";
+    if (teamTouches === 3)
+      return "ring-4 ring-orange-500 border-orange-500 shadow-lg scale-105 bg-orange-50 dark:bg-orange-950";
+
+    return "ring-4 ring-primary border-primary shadow-lg scale-105";
   };
 
   const currentActionColor = () => {
     if (!pointInProgress) return "bg-muted text-muted-foreground";
+    if (touchCount >= 4) return "bg-red-500 text-white animate-pulse";
     if (currentActionTeam === "Home")
       return "bg-primary text-primary-foreground";
     if (currentActionTeam === "Away")
@@ -98,9 +120,11 @@ export default function MatchTracker() {
           player
             ? "bg-card border-border hover:border-primary cursor-pointer hover:shadow-md"
             : "bg-muted/30 border-muted opacity-50 cursor-not-allowed",
-          isLastClicked &&
-            "ring-4 ring-green-500 border-green-500 shadow-lg scale-105 bg-green-50 dark:bg-green-950",
-          team === "Home" ? "hover:bg-primary/5" : "hover:bg-secondary/5",
+          isLastClicked
+            ? getTouchColor(true, touchCount >= 4, touchCount)
+            : getTouchColor(false, false, 0),
+          !isLastClicked && team === "Home" ? "hover:bg-primary/5" : "",
+          !isLastClicked && team === "Away" ? "hover:bg-secondary/5" : "",
         )}
       >
         <span className="absolute top-1 right-2 text-xs font-bold text-muted-foreground/50">

@@ -5,6 +5,7 @@ import {
   ActionRecord,
 } from "../../constants/index.interfaces";
 import { TouchAction } from "@/constants/index.types";
+import teamsData from "@/data/teams.json";
 
 const initialCourt = (): CourtPlayer[] => [
   { position: 1, player: null },
@@ -29,8 +30,17 @@ export const useMatchStore = create<MatchState>((set) => ({
     { id: "2", name: "محمد علي", number: "7", role: "Passer" },
     { id: "3", name: "محمود حسن", number: "5", role: "Libero" },
     { id: "4", name: "خالد عمر", number: "9", role: "Striker 2" },
+    { id: "5", name: "طارق فرنسيس", number: "11", role: "Striker 3" },
+    { id: "6", name: "ياسر محمود", number: "1", role: "Striker 2" },
+    { id: "7", name: "أسامة شريف", number: "8", role: "Passer" },
+    { id: "8", name: "مصطفى فؤاد", number: "2", role: "Libero" },
+    { id: "9", name: "علي سامي", number: "6", role: "Striker 4" },
+    { id: "10", name: "نور الدين", number: "3", role: "Striker 2" },
+    { id: "11", name: "حسن يوسف", number: "4", role: "Passer" },
+    { id: "12", name: "علاء سعد", number: "12", role: "Striker 3" },
   ],
 
+  teams: teamsData,
   actions: [],
 
   pointInProgress: false,
@@ -43,6 +53,20 @@ export const useMatchStore = create<MatchState>((set) => ({
   removePlayerFromRoster: (id) =>
     set((state) => ({
       availablePlayers: state.availablePlayers.filter((p) => p.id !== id),
+    })),
+
+  addTeam: (team) => set((state) => ({ teams: [...state.teams, team] })),
+
+  updateTeam: (id, updatedTeam) =>
+    set((state) => ({
+      teams: state.teams.map((t) =>
+        t.id === id ? { ...t, ...updatedTeam } : t,
+      ),
+    })),
+
+  deleteTeam: (id) =>
+    set((state) => ({
+      teams: state.teams.filter((t) => t.id !== id),
     })),
 
   assignPlayerToCourt: (team, position, playerId) =>
@@ -94,7 +118,9 @@ export const useMatchStore = create<MatchState>((set) => ({
           ? "Defence"
           : newTouchCount === 2
             ? "Setting"
-            : "Striking";
+            : newTouchCount === 3
+              ? "Striking"
+              : "Error";
 
       const courtKey = team === "Home" ? "homeTeamCourt" : "awayTeamCourt";
       const courtPlayer = state[courtKey].find(
@@ -114,11 +140,28 @@ export const useMatchStore = create<MatchState>((set) => ({
         action: actionType,
       };
 
-      return {
+      const updatedState = {
         currentActionTeam: team,
         touchCount: newTouchCount,
         actions: [...state.actions, newAction],
       };
+
+      // If 4th touch, automatically end the point with an Error (Fault) for the current team
+      if (newTouchCount === 4) {
+        const opposingTeam = team === "Home" ? "Away" : "Home";
+        newAction.endPointAction = "Fault";
+        return {
+          ...updatedState,
+          homeScore:
+            opposingTeam === "Home" ? state.homeScore + 1 : state.homeScore,
+          awayScore:
+            opposingTeam === "Away" ? state.awayScore + 1 : state.awayScore,
+          pointInProgress: false,
+          currentActionTeam: null,
+        };
+      }
+
+      return updatedState;
     }),
 
   endPoint: (winningTeam, endAction) =>

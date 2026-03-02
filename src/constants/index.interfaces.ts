@@ -6,6 +6,12 @@ import {
   TouchAction,
 } from "./index.types";
 
+export interface TeamTemplate {
+  id: string;
+  name: string;
+  players: string[];
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -41,6 +47,7 @@ export interface MatchState {
   awayTeamCourt: CourtPlayer[];
 
   availablePlayers: Player[];
+  teams: TeamTemplate[];
 
   actions: ActionRecord[];
 
@@ -51,6 +58,11 @@ export interface MatchState {
   // Actions
   addPlayerToRoster: (player: Player) => void;
   removePlayerFromRoster: (id: string) => void;
+
+  addTeam: (team: TeamTemplate) => void;
+  updateTeam: (id: string, team: Partial<TeamTemplate>) => void;
+  deleteTeam: (id: string) => void;
+
   assignPlayerToCourt: (
     team: TeamType,
     position: CourtPosition,
