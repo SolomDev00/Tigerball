@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
@@ -24,11 +23,6 @@ interface TeamFormProps {
   isSubmitting: boolean;
 }
 
-interface InternalFormValues {
-  name: string;
-  slots: { playerId: string }[];
-}
-
 export function TeamForm({
   isOpen,
   onClose,
@@ -40,44 +34,37 @@ export function TeamForm({
   const {
     register,
     handleSubmit,
-    control,
     reset,
     formState: { errors },
-  } = useForm<InternalFormValues>({
-    resolver: zodResolver(teamSchema as any), // Use any to bridge the gap between internal and external structure
+  } = useForm<TeamFormValues>({
+    resolver: zodResolver(teamSchema),
     defaultValues: {
       name: "",
-      slots: Array(6).fill({ playerId: "" }),
+      playerIds: Array(6).fill(""),
     },
-  });
-
-  const { fields } = useFieldArray({
-    control,
-    name: "slots",
   });
 
   useEffect(() => {
     if (editingTeam) {
       const playerIds = editingTeam.players.map((tp) => tp.playerId);
-      const slots = Array(6)
-        .fill(null)
-        .map((_, i) => ({ playerId: playerIds[i] || "" }));
+      const paddedPlayerIds = Array(6)
+        .fill("")
+        .map((_, i) => playerIds[i] || "");
+
       reset({
         name: editingTeam.name,
-        slots,
+        playerIds: paddedPlayerIds,
       });
     } else {
       reset({
         name: "",
-        slots: Array(6).fill({ playerId: "" }),
+        playerIds: Array(6).fill(""),
       });
     }
   }, [editingTeam, reset, isOpen]);
 
-  const handleProcessSubmit = async (data: InternalFormValues) => {
-    const validPlayerIds = data.slots
-      .map((s) => s.playerId)
-      .filter((id) => id !== "");
+  const handleProcessSubmit = async (data: TeamFormValues) => {
+    const validPlayerIds = data.playerIds.filter((id) => id.trim() !== "");
 
     const result = await onSubmit({
       name: data.name,
@@ -119,13 +106,13 @@ export function TeamForm({
 
           <div className="space-y-3">
             <label className="text-sm font-semibold">تشكيلة المراكز</label>
-            {fields.map((field, idx) => (
-              <div key={field.id} className="flex items-center gap-4">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <div key={idx} className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
                   {idx + 1}
                 </div>
                 <select
-                  {...register(`slots.${idx}.playerId`)}
+                  {...register(`playerIds.${idx}`)}
                   className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 >
                   <option value="">-- فاضي --</option>
@@ -137,9 +124,9 @@ export function TeamForm({
                 </select>
               </div>
             ))}
-            {(errors as any).playerIds && (
+            {errors.playerIds && (
               <p className="text-xs text-red-500 font-bold bg-red-50 p-2 rounded border border-red-100 mt-2">
-                {(errors as any).playerIds.message}
+                {errors.playerIds.message}
               </p>
             )}
           </div>
