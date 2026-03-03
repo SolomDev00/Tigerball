@@ -22,9 +22,9 @@ const navItems = [
   { href: "/", label: "الرئيسية", icon: LayoutDashboard },
   { href: "/players", label: "اللاعبين", icon: Users },
   { href: "/teams", label: "الفرق", icon: ShieldHalf },
-  { href: "/matches/draw", label: "قرعة المباريات", icon: Shuffle },
+  { href: "/matches/draw", label: "المباريات", icon: Volleyball },
   { href: "/leaderboard", label: "المتصدرين", icon: Trophy },
-  { href: "/events", label: "الأخبار والأحداث", icon: CalendarDays },
+  // { href: "/events", label: "الأخبار والأحداث", icon: CalendarDays },
 ];
 
 interface AppLayoutProps {

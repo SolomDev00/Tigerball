@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import { prisma } from "@/lib/prisma";
@@ -35,6 +36,14 @@ export async function createPlayer(data: {
   phone?: string;
 }) {
   try {
+    // Robust input cleaning for optional fields that might be mangled by serialization
+    const cleanEmail =
+      data.email && data.email !== "$undefined" ? data.email.trim() : null;
+    const cleanPassword =
+      data.password && data.password !== "$undefined" ? data.password : null;
+    const cleanPhone =
+      data.phone && data.phone !== "$undefined" ? data.phone.trim() : null;
+
     const player = await prisma.$transaction(async (tx) => {
       // 1. Create the Player
       const newPlayer = await tx.player.create({
@@ -42,18 +51,18 @@ export async function createPlayer(data: {
           name: data.name,
           favoriteNumber: data.favoriteNumber,
           roles: data.roles,
-          gender: data.gender || "MALE",
+          gender: (data.gender as any) || "MALE",
         },
       });
 
       // 2. Create User account if email and password are provided
-      if (data.email && data.password) {
-        const hashedPassword = await hash(data.password, 10);
+      if (cleanEmail && cleanPassword) {
+        const hashedPassword = await hash(cleanPassword, 10);
         await tx.user.create({
           data: {
-            email: data.email,
+            email: cleanEmail,
             password: hashedPassword,
-            phone: data.phone,
+            phone: cleanPhone,
             role: "PLAYER",
             playerId: newPlayer.id,
           },
@@ -66,9 +75,14 @@ export async function createPlayer(data: {
     revalidatePath("/players");
     revalidatePath("/matches/new");
     return { success: true, data: player };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to create player:", error);
-    return { success: false, error: "Failed to create player" };
+    // Return a more descriptive error message if possible
+    let errorMsg = "فشل في إضافة اللاعب";
+    if (error.code === "P2002") {
+      errorMsg = "هذا البريد الإلكتروني مسجل مسبقاً";
+    }
+    return { success: false, error: errorMsg, details: error.message };
   }
 }
 

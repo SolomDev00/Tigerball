@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
@@ -127,7 +128,7 @@ export function TeamForm({
                   {...register(`slots.${idx}.playerId`)}
                   className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 >
-                  <option value="">-- خالي --</option>
+                  <option value="">-- فاضي --</option>
                   {availablePlayers.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.favoriteNumber} - {p.name} ({p.roles?.[0] || "لاعب"})
