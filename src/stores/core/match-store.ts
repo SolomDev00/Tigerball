@@ -5,15 +5,14 @@ import {
   ActionRecord,
 } from "../../constants/index.interfaces";
 import { TouchAction } from "@/constants/index.types";
-import teamsData from "@/data/teams.json";
 
 const initialCourt = (): CourtPlayer[] => [
-  { position: 1, player: null },
-  { position: 2, player: null },
-  { position: 3, player: null },
-  { position: 4, player: null },
-  { position: 5, player: null },
-  { position: 6, player: null },
+  { position: 1, player: null, yellowCards: 0, redCards: 0 },
+  { position: 2, player: null, yellowCards: 0, redCards: 0 },
+  { position: 3, player: null, yellowCards: 0, redCards: 0 },
+  { position: 4, player: null, yellowCards: 0, redCards: 0 },
+  { position: 5, player: null, yellowCards: 0, redCards: 0 },
+  { position: 6, player: null, yellowCards: 0, redCards: 0 },
 ];
 
 export const useMatchStore = create<MatchState>((set) => ({
@@ -25,27 +24,15 @@ export const useMatchStore = create<MatchState>((set) => ({
   homeTeamCourt: initialCourt(),
   awayTeamCourt: initialCourt(),
 
-  availablePlayers: [
-    { id: "1", name: "أحمد سعيد", number: "10", role: "Striker 4" },
-    { id: "2", name: "محمد علي", number: "7", role: "Passer" },
-    { id: "3", name: "محمود حسن", number: "5", role: "Libero" },
-    { id: "4", name: "خالد عمر", number: "9", role: "Striker 2" },
-    { id: "5", name: "طارق فرنسيس", number: "11", role: "Striker 3" },
-    { id: "6", name: "ياسر محمود", number: "1", role: "Striker 2" },
-    { id: "7", name: "أسامة شريف", number: "8", role: "Passer" },
-    { id: "8", name: "مصطفى فؤاد", number: "2", role: "Libero" },
-    { id: "9", name: "علي سامي", number: "6", role: "Striker 4" },
-    { id: "10", name: "نور الدين", number: "3", role: "Striker 2" },
-    { id: "11", name: "حسن يوسف", number: "4", role: "Passer" },
-    { id: "12", name: "علاء سعد", number: "12", role: "Striker 3" },
-  ],
-
-  teams: teamsData,
+  availablePlayers: [],
+  teams: [],
   actions: [],
 
   pointInProgress: false,
   currentActionTeam: null,
   touchCount: 0,
+
+  setAvailablePlayers: (players) => set({ availablePlayers: players }),
 
   addPlayerToRoster: (player) =>
     set((state) => ({ availablePlayers: [...state.availablePlayers, player] })),
@@ -135,8 +122,11 @@ export const useMatchStore = create<MatchState>((set) => ({
         point: state.pointCounter,
         score: `${state.homeScore}-${state.awayScore}`,
         team,
-        playerNo: courtPlayer.player.number,
+        playerNo: courtPlayer.player.favoriteNumber
+          ? String(courtPlayer.player.favoriteNumber)
+          : "N/A",
         playerName: courtPlayer.player.name,
+        playerId: courtPlayer.player.id,
         action: actionType,
       };
 
@@ -196,5 +186,46 @@ export const useMatchStore = create<MatchState>((set) => ({
       pointInProgress: false,
       touchCount: 0,
       currentActionTeam: null,
+    }),
+
+  issueCard: (team, position, card) =>
+    set((state) => {
+      const courtKey = team === "Home" ? "homeTeamCourt" : "awayTeamCourt";
+      const courtPlayer = state[courtKey].find(
+        (cp) => cp.position === position,
+      );
+
+      if (!courtPlayer || !courtPlayer.player) return state;
+
+      const updatedCourt = state[courtKey].map((cp) => {
+        if (cp.position !== position) return cp;
+        return {
+          ...cp,
+          yellowCards:
+            card === "Yellow" ? (cp.yellowCards || 0) + 1 : cp.yellowCards,
+          redCards: card === "Red" ? (cp.redCards || 0) + 1 : cp.redCards,
+        };
+      });
+
+      const newAction: ActionRecord = {
+        id: Math.random().toString(36).substring(7),
+        set: state.currentSet,
+        point: state.pointCounter,
+        score: `${state.homeScore}-${state.awayScore}`,
+        team,
+        playerNo: courtPlayer.player.favoriteNumber
+          ? String(courtPlayer.player.favoriteNumber)
+          : "N/A",
+        playerName: courtPlayer.player.name,
+        playerId: courtPlayer.player.id,
+        action: "Error",
+        endPointAction: "Fault",
+        card: card,
+      };
+
+      return {
+        [courtKey]: updatedCourt,
+        actions: [...state.actions, newAction],
+      };
     }),
 }));

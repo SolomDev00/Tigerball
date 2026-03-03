@@ -15,14 +15,16 @@ export interface TeamTemplate {
 export interface Player {
   id: string;
   name: string;
-  number: string;
-  role: PlayerRole;
+  favoriteNumber: number | null;
+  roles?: string[] | null;
   isTemporary?: boolean;
 }
 
 export interface CourtPlayer {
   position: CourtPosition;
   player: Player | null;
+  yellowCards?: number;
+  redCards?: number;
 }
 
 export interface ActionRecord {
@@ -33,8 +35,10 @@ export interface ActionRecord {
   team: TeamType;
   playerNo: string;
   playerName: string;
+  playerId?: string;
   action: TouchAction;
   endPointAction?: EndAction;
+  card?: "Yellow" | "Red";
 }
 
 export interface MatchState {
@@ -70,8 +74,14 @@ export interface MatchState {
   ) => void;
   removePlayerFromCourt: (team: TeamType, position: CourtPosition) => void;
 
+  setAvailablePlayers: (players: Player[]) => void;
   startPoint: () => void;
   recordTouch: (team: TeamType, position: CourtPosition) => void;
   endPoint: (winningTeam: TeamType, endAction: EndAction) => void;
   changeSet: (set: string) => void;
+  issueCard: (
+    team: TeamType,
+    position: CourtPosition,
+    card: "Yellow" | "Red",
+  ) => void;
 }

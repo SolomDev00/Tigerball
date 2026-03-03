@@ -1,6 +1,8 @@
 "use client";
 
-import { useMatchStore } from "@/stores/core/match-store";
+import { useState, useEffect } from "react";
+import { getGlobalLeaderboard } from "@/app/actions/leaderboard";
+import { toast } from "react-hot-toast";
 import {
   Card,
   CardContent,
@@ -19,60 +21,48 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Medal } from "lucide-react";
 
+interface PlayerStats {
+  id: string;
+  name: string;
+  favoriteNumber: number | null;
+  roles: string[];
+  defences: number;
+  settings: number;
+  strikes: number;
+  blocks: number;
+  aces: number;
+  faults: number;
+  score: number;
+  totalTouches: number;
+}
+
 export default function LeaderboardPage() {
-  const { actions, availablePlayers } = useMatchStore();
+  const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Aggregate stats per player
-  const playerStats = availablePlayers
-    .map((player) => {
-      const playerActions = actions.filter((a) => a.playerNo === player.number);
+  useEffect(() => {
+    async function loadStats() {
+      const res = await getGlobalLeaderboard();
+      if (res.success && res.data) {
+        setPlayerStats(res.data);
+      } else {
+        toast.error("فشل في تحميل بيانات قائمة المتصدرين");
+      }
+      setLoading(false);
+    }
+    loadStats();
+  }, []);
 
-      const defences = playerActions.filter(
-        (a) => a.action === "Defence",
-      ).length;
-      const settings = playerActions.filter(
-        (a) => a.action === "Setting",
-      ).length;
-      const strikes = playerActions.filter(
-        (a) => a.action === "Striking",
-      ).length;
-
-      // An action only has an endPointAction if it's the final action of the point
-      const blocks = playerActions.filter(
-        (a) => a.endPointAction === "Block",
-      ).length;
-      const aces = playerActions.filter(
-        (a) => a.endPointAction === "Ace",
-      ).length;
-      const faults = playerActions.filter(
-        (a) =>
-          a.endPointAction === "Fault" ||
-          a.endPointAction === "Touch Net" ||
-          a.endPointAction === "Out Side",
-      ).length;
-
-      // Simple mock score calculation
-      const score =
-        strikes * 2 +
-        blocks * 3 +
-        aces * 4 +
-        defences * 1 +
-        settings * 1 -
-        faults * 2;
-
-      return {
-        ...player,
-        defences,
-        settings,
-        strikes,
-        blocks,
-        aces,
-        faults,
-        score,
-        totalTouches: playerActions.length,
-      };
-    })
-    .sort((a, b) => b.score - a.score);
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <Trophy className="w-12 h-12 text-yellow-500 animate-bounce" />
+        <p className="text-xl font-bold animate-pulse text-primary">
+          جاري تحميل قائمة المتصدرين...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -100,7 +90,7 @@ export default function LeaderboardPage() {
               <CardTitle className="text-lg flex justify-between items-center">
                 <span className="flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
-                    {player.number}
+                    {player.favoriteNumber}
                   </span>
                   {player.name}
                 </span>
@@ -108,7 +98,7 @@ export default function LeaderboardPage() {
                 {index === 1 && <Medal className="w-6 h-6 text-slate-400" />}
                 {index === 2 && <Medal className="w-6 h-6 text-amber-700" />}
               </CardTitle>
-              <CardDescription>{player.role}</CardDescription>
+              <CardDescription>{player.roles?.[0] || ""}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-end justify-between mt-2">
@@ -184,13 +174,13 @@ export default function LeaderboardPage() {
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                            {player.number}
+                            {player.favoriteNumber}
                           </span>
                           {player.name}
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {player.role}
+                        {player.roles?.[0] || ""}
                       </TableCell>
                       <TableCell className="text-center">
                         {player.totalTouches}

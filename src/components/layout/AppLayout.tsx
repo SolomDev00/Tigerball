@@ -11,18 +11,20 @@ import {
   Menu,
   Shuffle,
   ShieldHalf,
+  CalendarDays,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useSettingsStore } from "@/stores/core/settings-store";
 
 const navItems = [
   { href: "/", label: "الرئيسية", icon: LayoutDashboard },
   { href: "/players", label: "اللاعبين", icon: Users },
   { href: "/teams", label: "الفرق", icon: ShieldHalf },
   { href: "/matches/draw", label: "قرعة المباريات", icon: Shuffle },
-  { href: "/matches/new", label: "مباراة جديدة", icon: Volleyball },
   { href: "/leaderboard", label: "المتصدرين", icon: Trophy },
+  { href: "/events", label: "الأخبار والأحداث", icon: CalendarDays },
 ];
 
 interface AppLayoutProps {
@@ -96,6 +98,11 @@ export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(true);
+  const initializeSettings = useSettingsStore((state) => state.initialize);
+
+  useEffect(() => {
+    initializeSettings();
+  }, [initializeSettings]);
 
   return (
     <div className="min-h-screen bg-muted/30 flex w-full overflow-x-hidden">

@@ -1,0 +1,137 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  PLAYER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+model User {
+  id       String  @id @default(cuid())
+  email    String  @unique
+  password String // hashed password
+  role     Role    @default(PLAYER)
+  phone    String?
+
+  // Link to Player profile if role is PLAYER
+  playerId String? @unique
+  player   Player? @relation(fields: [playerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Player {
+  id              String   @id @default(cuid())
+  name            String
+  gender          Gender   @default(MALE)
+  age             Int?
+  height          Float?
+  roles           String[] // E.g. ["Striker", "Libero"]
+  favoritePlayers String[] // dynamic text list
+  favoriteNumber  Int?
+
+  user      User?
+  teams     TeamPlayer[]
+  captainOf Team[]       @relation("TeamCaptain")
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  matchActions MatchAction[]
+}
+
+model Team {
+  id   String @id @default(cuid())
+  name String
+
+  captainId String?
+  captain   Player? @relation("TeamCaptain", fields: [captainId], references: [id])
+
+  players TeamPlayer[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  homeMatches Match[]  @relation("HomeMatches")
+  awayMatches Match[]  @relation("AwayMatches")
+}
+
+// Join table for Team <-> Player (Many-to-Many)
+model TeamPlayer {
+  id       String @id @default(cuid())
+  teamId   String
+  playerId String
+
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, playerId])
+}
+
+model Event {
+  id       String   @id @default(cuid())
+  title    String
+  subtitle String?
+  images   String[] // Array of image URLs 
+  likes    Int      @default(0) // simple "Loves" counter
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Match {
+  id         String @id @default(cuid())
+  homeTeamId String
+  awayTeamId String
+  homeTeam   Team   @relation("HomeMatches", fields: [homeTeamId], references: [id])
+  awayTeam   Team   @relation("AwayMatches", fields: [awayTeamId], references: [id])
+
+  homeScore Int      @default(0)
+  awayScore Int      @default(0)
+  status    String   @default("COMPLETED") // "ONGOING", "COMPLETED"
+  date      DateTime @default(now())
+
+  actions MatchAction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MatchAction {
+  id      String @id @default(cuid())
+  matchId String
+  match   Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  set      String
+  point    Int
+  score    String
+  teamType String // "Home" or "Away"
+
+  playerId String?
+  player   Player? @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  action         String // "Defence", "Setting", "Striking", "Error"
+  endPointAction String? // "Block", "Out Side", "Touch Net", "Ace", "Fault"
+  card           String? // "Yellow", "Red"
+
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

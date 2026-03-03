@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { LenisProvider } from "@/providers/LenisProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { AuthProvider } from "@/providers/auth-provider";
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
@@ -35,7 +36,9 @@ export default function RootLayout({
           )}
         >
           <LenisProvider>
-            <AppLayout>{children}</AppLayout>
+            <AuthProvider>
+              <AppLayout>{children}</AppLayout>
+            </AuthProvider>
           </LenisProvider>
         </body>
       </html>
