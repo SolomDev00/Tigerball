@@ -137,6 +137,11 @@ export function TeamForm({
                 </select>
               </div>
             ))}
+            {(errors as any).playerIds && (
+              <p className="text-xs text-red-500 font-bold bg-red-50 p-2 rounded border border-red-100 mt-2">
+                {(errors as any).playerIds.message}
+              </p>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

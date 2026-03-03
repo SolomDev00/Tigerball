@@ -27,12 +27,15 @@ export async function getTeams() {
 export async function createTeam(name: string, playerIds: string[]) {
   try {
     const cleanName = name === "$undefined" ? "" : name;
+    // Deduplicate player IDs just in case
+    const uniquePlayerIds = Array.from(new Set(playerIds));
+
     const team = await prisma.team.create({
       data: {
         name: cleanName,
         // create TeamPlayer relationships
         players: {
-          create: playerIds.map((playerId) => ({
+          create: uniquePlayerIds.map((playerId) => ({
             player: {
               connect: { id: playerId },
             },
@@ -59,6 +62,7 @@ export async function updateTeam(
     const cleanName = name === "$undefined" ? "" : name;
     // If playerIds provided, we must sync them. Simplest is delete all old links, create new
     if (playerIds) {
+      const uniquePlayerIds = Array.from(new Set(playerIds));
       // Run in transaction to ensure integrity
       const team = await prisma.$transaction(async (tx) => {
         // Delete existing relationships
@@ -72,7 +76,7 @@ export async function updateTeam(
           data: {
             name: cleanName,
             players: {
-              create: playerIds.map((playerId) => ({
+              create: uniquePlayerIds.map((playerId) => ({
                 player: { connect: { id: playerId } },
               })),
             },
