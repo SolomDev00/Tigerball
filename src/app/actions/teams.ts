@@ -26,9 +26,10 @@ export async function getTeams() {
 
 export async function createTeam(name: string, playerIds: string[]) {
   try {
+    const cleanName = name === "$undefined" ? "" : name;
     const team = await prisma.team.create({
       data: {
-        name,
+        name: cleanName,
         // create TeamPlayer relationships
         players: {
           create: playerIds.map((playerId) => ({
@@ -55,6 +56,7 @@ export async function updateTeam(
   playerIds?: string[],
 ) {
   try {
+    const cleanName = name === "$undefined" ? "" : name;
     // If playerIds provided, we must sync them. Simplest is delete all old links, create new
     if (playerIds) {
       // Run in transaction to ensure integrity
@@ -68,7 +70,7 @@ export async function updateTeam(
         return await tx.team.update({
           where: { id },
           data: {
-            name,
+            name: cleanName,
             players: {
               create: playerIds.map((playerId) => ({
                 player: { connect: { id: playerId } },
@@ -85,7 +87,7 @@ export async function updateTeam(
       // Just update Name
       const team = await prisma.team.update({
         where: { id },
-        data: { name },
+        data: { name: cleanName },
       });
       revalidatePath("/teams");
       revalidatePath("/matches/new");

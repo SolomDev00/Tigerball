@@ -88,9 +88,19 @@ export async function createPlayer(data: {
 
 export async function updatePlayer(id: string, data: Prisma.PlayerUpdateInput) {
   try {
+    // Sanitize common string fields that might be mangled by serialization
+    const sanitizedData: any = { ...data };
+
+    const keysToSanitize = ["name", "email", "password", "phone"] as const;
+    keysToSanitize.forEach((key) => {
+      if ((sanitizedData as any)[key] === "$undefined") {
+        (sanitizedData as any)[key] = null;
+      }
+    });
+
     const player = await prisma.player.update({
       where: { id },
-      data,
+      data: sanitizedData,
     });
     revalidatePath("/players");
     revalidatePath("/matches/new");
