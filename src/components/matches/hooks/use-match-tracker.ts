@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useMatchStore } from "@/stores/core/match-store";
 import { useSettingsStore } from "@/stores/core/settings-store";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -32,7 +32,8 @@ export function useMatchTracker() {
     issueCard,
   } = useMatchStore();
 
-  const { courtTheme, whistleVolume, selectedWhistle } = useSettingsStore();
+  const { courtTheme, whistleVolume, selectedWhistle, setSelectedWhistle } =
+    useSettingsStore();
 
   const [isEndingPoint, setIsEndingPoint] = useState(false);
   const [selectedServer, setSelectedServer] = useState<{
@@ -54,6 +55,20 @@ export function useMatchTracker() {
     team: TeamType;
     pos: CourtPosition;
   } | null>(null);
+
+  // Auto-select whistle if none configured
+  useEffect(() => {
+    if (!selectedWhistle) {
+      fetch("/api/sounds")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.sounds.length > 0) {
+            setSelectedWhistle(data.sounds[0]);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [selectedWhistle, setSelectedWhistle]);
 
   const playWhistle = useCallback(() => {
     if (!selectedWhistle) return;

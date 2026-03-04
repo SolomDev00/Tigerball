@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -37,17 +38,17 @@ export function TeamForm({
     reset,
     formState: { errors },
   } = useForm<TeamFormValues>({
-    resolver: zodResolver(teamSchema),
+    resolver: zodResolver(teamSchema as any),
     defaultValues: {
       name: "",
-      playerIds: Array(6).fill(""),
+      playerIds: Array(9).fill(""),
     },
   });
 
   useEffect(() => {
     if (editingTeam) {
       const playerIds = editingTeam.players.map((tp) => tp.playerId);
-      const paddedPlayerIds = Array(6)
+      const paddedPlayerIds = Array(9)
         .fill("")
         .map((_, i) => playerIds[i] || "");
 
@@ -58,7 +59,7 @@ export function TeamForm({
     } else {
       reset({
         name: "",
-        playerIds: Array(6).fill(""),
+        playerIds: Array(9).fill(""),
       });
     }
   }, [editingTeam, reset, isOpen]);
@@ -84,7 +85,7 @@ export function TeamForm({
             {editingTeam ? "تعديل الفريق" : "إضافة فريق جديد"}
           </DialogTitle>
           <DialogDescription>
-            أدخل اسم الفريق وقم بتعيين لاعبين للمراكز الستة الأساسية.
+            أدخل اسم الفريق وقم بتعيين لاعبين للمراكز الأساسية والاحتياطية.
           </DialogDescription>
         </DialogHeader>
 
@@ -105,11 +106,13 @@ export function TeamForm({
           </div>
 
           <div className="space-y-3">
-            <label className="text-sm font-semibold">تشكيلة المراكز</label>
+            <label className="text-sm font-semibold">
+              تشكيلة المراكز الأساسية
+            </label>
             {Array.from({ length: 6 }).map((_, idx) => (
               <div key={idx} className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
-                  {idx + 1}
+                  {6 - idx}
                 </div>
                 <select
                   {...register(`playerIds.${idx}`)}
@@ -124,6 +127,37 @@ export function TeamForm({
                 </select>
               </div>
             ))}
+
+            <div className="border-t pt-4 mt-4">
+              <label className="text-sm font-semibold text-amber-600">
+                لاعبين احتياطيين
+              </label>
+              <p className="text-xs text-muted-foreground mb-3">
+                اختر لاعبين بدلاء لاستخدامهم أثناء المباريات.
+              </p>
+              {Array.from({ length: 3 }).map((_, idx) => (
+                <div
+                  key={`reserve-${idx}`}
+                  className="flex items-center gap-4 mb-3"
+                >
+                  <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0">
+                    ب{idx + 1}
+                  </div>
+                  <select
+                    {...register(`playerIds.${6 + idx}`)}
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-amber-200 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2"
+                  >
+                    <option value="">-- فاضي --</option>
+                    {availablePlayers.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.favoriteNumber} - {p.name} ({p.roles?.[0] || "لاعب"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+
             {errors.playerIds && (
               <p className="text-xs text-red-500 font-bold bg-red-50 p-2 rounded border border-red-100 mt-2">
                 {errors.playerIds.message}
